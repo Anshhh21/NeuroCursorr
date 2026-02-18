@@ -1,27 +1,25 @@
 import { NextResponse } from "next/server";
+import { sendEngineCommand } from "@/lib/engineSocket";
 
 export async function GET() {
+
     try {
-        return NextResponse.json({
-            
-                success: true,
-                engineStatus: "disconnected",
-                message: "Engine is not connected"
-            
-        },
-        { status: 200 }
-    )
-    
-    } catch (error) {
-        console.error("Error checking engine status:", error);
-    
+
+        const result = await sendEngineCommand("STATUS");
+
         return NextResponse.json(
-            {
-            success: false,
-            message: "Failed to check engine status",
-            },
-            { status: 500 }
+            result,
+            { status: 200 }
         );
-        
+
+    } catch (error: any) {
+
+        return NextResponse.json(
+        {
+            success: false,
+            message: error?.message || "Failed to check engine status",
+        },
+        { status: 500 }
+        );
     }
 }

@@ -1,24 +1,26 @@
 import { NextResponse } from "next/server";
+import { sendEngineCommand } from "@/lib/engineSocket";
 
 export async function POST() {
     try {
+
+        const result = await sendEngineCommand("STOP");
+
         return NextResponse.json(
-            {
-            success: true,
-            message: "Engine stop request accepted",
-            },
+            result,
             { status: 200 }
         );
         
-    } catch (error) {
-        console.error("Error stopping engine:", error);
+    } catch (error:any) {
     
         return NextResponse.json(
+
             {
             success: false,
-            message: "Failed to process engine stop request",
+            message: error?.message || "Failed to stop engine",
             },
             { status: 500 }
+            
         );
         
     }

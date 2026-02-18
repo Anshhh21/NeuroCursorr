@@ -1,24 +1,20 @@
 import { NextResponse } from "next/server";
+import { sendEngineCommand } from "@/lib/engineSocket";
 
-export async function POST(request : Request) {
-
+export async function POST() {
     try {
+
+    const result = await sendEngineCommand("START");
+
+    return NextResponse.json(result, { status: 200 });
+
+    } catch (error: any) {
         return NextResponse.json(
             {
-            success: true,
-            message: "Engine start request accepted",
-            },
-            { status: 200 }
-        );
-        } catch (error) {
-        console.error("Error starting engine:", error);
-    
-        return NextResponse.json(
-            {
-            success: false,
-            message: "Failed to process engine start request",
+                success: false,
+                message: error?.message || "Failed to start engine",
             },
             { status: 500 }
         );
-        }
     }
+}
