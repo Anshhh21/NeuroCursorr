@@ -42,10 +42,18 @@ def camera_loop():
 
     pinch_frames = 0
     required_pinch_frames = 2  # faster click detection
+    palm_frames = 0
+
+    control_enabled = True
+    toggle_cooldown = 0
+    paused_state_logged = False
 
     while engine_running:
         if click_cooldown > 0:
             click_cooldown -= 1
+
+        if toggle_cooldown > 0:
+            toggle_cooldown -= 1
 
         ret, frame = cap.read()
 
@@ -64,6 +72,42 @@ def camera_loop():
             for hand_landmarks in results.multi_hand_landmarks:
                 index_tip = hand_landmarks.landmark[8]
                 thumb_tip = hand_landmarks.landmark[4]
+
+                wrist = hand_landmarks.landmark[0]
+
+                # Stricter finger detection (tip must be above its PIP joint)
+                thumb_up = hand_landmarks.landmark[4].x < hand_landmarks.landmark[3].x
+
+                index_up = hand_landmarks.landmark[8].y < hand_landmarks.landmark[6].y
+                middle_up = hand_landmarks.landmark[12].y < hand_landmarks.landmark[10].y
+                ring_up = hand_landmarks.landmark[16].y < hand_landmarks.landmark[14].y
+                pinky_up = hand_landmarks.landmark[20].y < hand_landmarks.landmark[18].y
+
+                # Detect 5-finger open palm (stable hold required)
+                if thumb_up and index_up and middle_up and ring_up and pinky_up:
+                    palm_frames += 1
+                else:
+                    palm_frames = 0
+
+                # Toggle only if held for several frames (no instant flip)
+                if palm_frames > 8 and toggle_cooldown == 0:
+                    if control_enabled:
+                        control_enabled = False
+                        paused_state_logged = False
+                        print("Paused")
+                    else:
+                        control_enabled = True
+                        paused_state_logged = False
+                        print("Resumed")
+
+                    toggle_cooldown = 30
+                    palm_frames = 0
+
+                if not control_enabled:
+                    if not paused_state_logged:
+                        print("System is PAUSED")
+                        paused_state_logged = True
+                    continue
 
                 # Map normalized coordinates directly to screen size
                 cam_x = int(index_tip.x * frame.shape[1])
@@ -114,8 +158,6 @@ def camera_loop():
                     print("Click!")
 
                 print("Mouse:", screen_x, screen_y)
-
-        cv2.waitKey(1)
 
     cap.release()
     print("Camera thread stopped")
