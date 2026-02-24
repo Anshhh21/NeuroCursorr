@@ -30,18 +30,18 @@ def camera_loop():
     )
 
     screen_width, screen_height = pyautogui.size()
-    movement_gain = 1.5  # increase for more sensitivity (try 1.3–2.0)
+    movement_gain = 1.5 
     frame_margin = 20
 
     prev_x, prev_y = 0, 0
     smoothening = 8
 
-    click_threshold = 40  # distance in camera pixels
+    click_threshold = 40  
     click_cooldown = 0
-    max_cooldown = 8  # shorter cooldown for quicker re-click
+    max_cooldown = 8  
 
     pinch_frames = 0
-    required_pinch_frames = 2  # faster click detection
+    required_pinch_frames = 2
     palm_frames = 0
 
     control_enabled = True
@@ -75,7 +75,7 @@ def camera_loop():
 
                 wrist = hand_landmarks.landmark[0]
 
-                # Stricter finger detection (tip must be above its PIP joint)
+                
                 thumb_up = hand_landmarks.landmark[4].x < hand_landmarks.landmark[3].x
 
                 index_up = hand_landmarks.landmark[8].y < hand_landmarks.landmark[6].y
@@ -83,13 +83,13 @@ def camera_loop():
                 ring_up = hand_landmarks.landmark[16].y < hand_landmarks.landmark[14].y
                 pinky_up = hand_landmarks.landmark[20].y < hand_landmarks.landmark[18].y
 
-                # Detect 5-finger open palm (stable hold required)
+                
                 if thumb_up and index_up and middle_up and ring_up and pinky_up:
                     palm_frames += 1
                 else:
                     palm_frames = 0
 
-                # Toggle only if held for several frames (no instant flip)
+                
                 if palm_frames > 8 and toggle_cooldown == 0:
                     if control_enabled:
                         control_enabled = False
@@ -109,13 +109,13 @@ def camera_loop():
                         paused_state_logged = True
                     continue
 
-                # Map normalized coordinates directly to screen size
+                
                 cam_x = int(index_tip.x * frame.shape[1])
                 cam_y = int(index_tip.y * frame.shape[0])
 
                 
 
-                # Map to screen
+                
                 screen_x = np.interp(cam_x,
                     (0, frame.shape[1]),
                     (0, screen_width))
@@ -124,25 +124,25 @@ def camera_loop():
                     (0, frame.shape[0]),
                     (0, screen_height))
 
-                # Apply gain around screen center for better reach
+                
                 screen_x = (screen_x - screen_width / 2) * movement_gain + screen_width / 2
                 screen_y = (screen_y - screen_height / 2) * movement_gain + screen_height / 2
 
-                # Map thumb using same camera → screen mapping
+                
                 thumb_cam_x = int(thumb_tip.x * frame.shape[1])
                 thumb_cam_y = int(thumb_tip.y * frame.shape[0])
 
                 thumb_cam_x = np.clip(thumb_cam_x, frame_margin, frame.shape[1] - frame_margin)
                 thumb_cam_y = np.clip(thumb_cam_y, frame_margin, frame.shape[0] - frame_margin)
 
-                # Smooth movement
+                
                 curr_x = prev_x + (screen_x - prev_x) / smoothening
                 curr_y = prev_y + (screen_y - prev_y) / smoothening
 
                 pyautogui.moveTo(curr_x, curr_y)
                 prev_x, prev_y = curr_x, curr_y
 
-                # Distance between index and thumb (use camera space for stability)
+                
                 distance = ((cam_x - thumb_cam_x) ** 2 + (cam_y - thumb_cam_y) ** 2) ** 0.5
 
                 if distance < click_threshold:
@@ -150,7 +150,7 @@ def camera_loop():
                 else:
                     pinch_frames = 0
 
-                # Click only after stable pinch hold
+                
                 if pinch_frames >= required_pinch_frames and click_cooldown == 0:
                     pyautogui.click()
                     click_cooldown = max_cooldown
